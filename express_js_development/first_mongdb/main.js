@@ -1,40 +1,21 @@
-const port = 3000,
-    express = require('express'),
-    app = express();
+const mongoose = require("mongoose");
 
-const MongoDB = require("mongodb").MongoClient,
-    dbURL = "mongodb://127.0.0.1:27017",
-    dbName = "mongodb";
+mongoose.connect(
+ "mongodb://localhost:27017/recipe_db",
+ {useNewUrlParser: true}
+);
+const db = mongoose.connection;
 
-
-MongoDB.connect(dbURL, (error, client) => {
-    if (error) throw error;
-    let db = client.db(dbName);
-    db.collection("contacts")
-        .find()
-        .toArray((error, data) => {
-            if (error) throw error;
-            console.log(data);
-        }); 
-    db.collection("contacts")
-        .insert({
-            name: "Freddie Mercury",
-            email: "fred@queen.com"
-        }, (error, db) => {
-            if (error) throw error;
-            console.log(db);
-        });
+db.once("open", () => {
+    console.log("Successfully connected to MongoDB using Mongoose!");
 });
 
+const Subscriber = require("./models/subscriber")
 
-
-
-
-app.get('/', (req, res) => {
-    res.send("POST successfull!");
-});
-
-
-app.listen(port, () => {
-    console.log(`Server running on port: ${port}`);
+var myQuery = Subscriber.findOne({
+        name: "Malish Daniil"
+    })
+    .where("email", /daniil/);
+myQuery.exec((error, data) => {
+    if (data) console.log(data.name);
 });
