@@ -11,6 +11,8 @@ const express = require("express"),
   usersController = require("./controllers/usersController"),
   coursesController = require("./controllers/coursesController"),
   Subscriber = require("./models/subscriber");
+  methodOverride = require("method-override"),
+
 mongoose.Promise = global.Promise;
 
 mongoose.connect(
@@ -36,6 +38,12 @@ router.use(
   })
 );
 
+router.use(
+    methodOverride("_method", {
+      methods: ["POST", "GET"]
+    })
+  );
+
 router.use(express.json());
 router.use(homeController.logRequestPaths);
 
@@ -53,6 +61,10 @@ router.post(
   subscribersController.create,
   subscribersController.redirectView
 );
+
+router.get("/users/:id/edit", usersController.edit);
+router.put("/users/:id/update", usersController.update, usersController.redirectView);
+router.delete("/users/:id/delete", usersController.delete, usersController.redirectView);
 
 router.get("/courses", coursesController.index, coursesController.indexView);
 router.get("/courses/new", coursesController.new);
