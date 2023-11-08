@@ -1,73 +1,71 @@
+"use strict";
+
 const express = require("express"),
-    app = express(),
-    errorController = require("./controllers/errorController"),
-    homeController = require("./controllers/homeController"),
-    subscribersController = require("./controllers/subscribersController"),
-    layouts = require("express-ejs-layouts"),
-    mongoose = require("mongoose"),
-    Subscriber = require("./models/subscriber");
-
-
+  app = express(),
+  router = express.Router(),
+  layouts = require("express-ejs-layouts"),
+  mongoose = require("mongoose"),
+  errorController = require("./controllers/errorController"),
+  homeController = require("./controllers/homeController"),
+  subscribersController = require("./controllers/subscribersController"),
+  usersController = require("./controllers/usersController"),
+  coursesController = require("./controllers/coursesController"),
+  Subscriber = require("./models/subscriber");
 mongoose.Promise = global.Promise;
 
 mongoose.connect(
-    "mongodb://localhost:27017/recipe_db"
+  "mongodb://localhost:27017/recipe_db",
+  { useNewUrlParser: true }
 );
+mongoose.set("useCreateIndex", true);
+
 const db = mongoose.connection;
 
 db.once("open", () => {
-    console.log("Successfully connected to MongoDB using Mongoose!");
+  console.log("Successfully connected to MongoDB using Mongoose!");
 });
 
 app.set("port", process.env.PORT || 3000);
 app.set("view engine", "ejs");
 
-app.use(express.static("public"));
-app.use(layouts);
-app.use(
-    express.urlencoded({
+router.use(express.static("public"));
+router.use(layouts);
+router.use(
+  express.urlencoded({
     extended: false
-    })
+  })
 );
-app.use(express.json());
-app.use(homeController.logRequestPaths);
 
-app.get("/name", homeController.respondWithName);
-app.get("/items/:vegetable", homeController.sendReqParam);
+router.use(express.json());
+router.use(homeController.logRequestPaths);
 
-app.get("/subscribers", subscribersController.getAllSubscribers, (req, res, next) => {
-    res.render("subscribers", { subscribers: req.data });
-});
+router.get("/", homeController.index);
+router.get("/contact", homeController.getSubscriptionPage);
 
-app.get("/", homeController.index);
-app.get("/courses", homeController.showCourses);
+router.get("/users", usersController.index, usersController.indexView);
+router.get("/users/new", usersController.new);
+router.post("/users/create", usersController.create, usersController.redirectView);
 
-app.get("/contact", subscribersController.getSubscriptionPage);
-app.post("/subscribe", subscribersController.saveSubscriber);
+router.get("/subscribers", subscribersController.index, subscribersController.indexView);
+router.get("/subscribers/new", subscribersController.new);
+router.post(
+  "/subscribers/create",
+  subscribersController.create,
+  subscribersController.redirectView
+);
 
-app.use(errorController.logErrors);
-app.use(errorController.respondNoResourceFound);
-app.use(errorController.respondInternalError);
+router.get("/courses", coursesController.index, coursesController.indexView);
+router.get("/courses/new", coursesController.new);
+router.post("/courses/create", coursesController.create, coursesController.redirectView);
+
+router.post("/subscribe", subscribersController.saveSubscriber);
+
+router.use(errorController.logErrors);
+router.use(errorController.respondNoResourceFound);
+router.use(errorController.respondInternalError);
+
+app.use("/", router);
 
 app.listen(app.get("port"), () => {
-    console.log(`Server running at http://localhost:${app.get("port")}`);
+  console.log(`Server running at http://localhost:${app.get("port")}`);
 });
-
-
-const Course = require("./models/course");
-var testCourse, testSubscriber;
-Course.create( {
-    title: "Tomato Land",
-    description: "Locally farmed tomatoes only",
-    zipCode: 12345,
-    vip: true,
-    items: ["cherry", "heirloom"]
-}).then(course => testCourse = course);
-Subscriber.findOne({}).then(
-    subscriber => testSubscriber = subscriber
-);
-testSubscriber.courses.push(testCourse);
-testSubscriber.save();
-Subscriber.populate(testSubscriber, "courses").then(subscriber =>
-    console.log(subscriber)
-);

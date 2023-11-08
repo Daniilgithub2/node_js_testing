@@ -19,7 +19,7 @@ const subscriberSchema = new mongoose.Schema({
   },
   vip: {
     type: Boolean,
-    required: true,
+    required: true
   },
   courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }]
 });
