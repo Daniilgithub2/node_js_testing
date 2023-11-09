@@ -28,8 +28,7 @@ module.exports = {
       },
       email: req.body.email,
       password: req.body.password,
-      zipCode: req.body.zipCode,
-      phoneNumber: req.body.phoneNumber
+      zipCode: req.body.zipCode
     };
     User.create(userParams)
       .then(user => {

@@ -2,6 +2,7 @@
 
 const mongoose = require("mongoose"),
   { Schema } = mongoose,
+  Subscriber = require("./subscriber"),
   userSchema = new Schema(
     {
       name: {
@@ -41,15 +42,7 @@ const mongoose = require("mongoose"),
   );
 
 userSchema.virtual("fullName").get(function() {
-    return `${this.name.first} ${this.name.last}`;
-});
-userSchema.virtual("username").get(function() {
-    if (this.name.last.length <= 7) {
-        return `${this.name.first.charAt(0)}${this.name.last}`;
-    } else {
-        return `${this.name.first.charAt(0)}${this.name.last.substr(0,7)}`;
-    };
-    
+  return `${this.name.first} ${this.name.last}`;
 });
 
 userSchema.pre("save", function(next) {

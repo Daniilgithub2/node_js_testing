@@ -17,10 +17,6 @@ const subscriberSchema = new mongoose.Schema({
     min: [10000, "Zip code too short"],
     max: 99999
   },
-  vip: {
-    type: Boolean,
-    required: true
-  },
   courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }]
 });
 
