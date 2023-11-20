@@ -6,6 +6,9 @@ const express = require("express"),
   layouts = require("express-ejs-layouts"),
   mongoose = require("mongoose"),
   methodOverride = require("method-override"),
+  expressSession = require("express-session"),
+  cookieParser = require("cookie-parser"),
+  connectFlash = require("connect-flash"),
   errorController = require("./controllers/errorController"),
   homeController = require("./controllers/homeController"),
   subscribersController = require("./controllers/subscribersController"),
@@ -36,11 +39,28 @@ router.use(
   })
 );
 
+router.use(cookieParser("secret_passcode"));
+router.use(expressSession({
+  secret: "secret-passcode",
+  cookie: {
+    maxAge: 4000000
+  },
+  resave: false,
+  saveUninitialized: false
+}));
+router.use(connectFlash())
+
+
 router.use(
   methodOverride("_method", {
     methods: ["POST", "GET"]
   })
 );
+
+router.use((req, res, next) => {
+  res.locals.flashMessages = req.flash();
+  next();
+});
 
 router.use(express.json());
 router.use(homeController.logRequestPaths);
