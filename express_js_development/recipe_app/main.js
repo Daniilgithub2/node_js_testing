@@ -9,12 +9,13 @@ const express = require("express"),
   expressSession = require("express-session"),
   cookieParser = require("cookie-parser"),
   connectFlash = require("connect-flash"),
+  passport = require('passport'),
   errorController = require("./controllers/errorController"),
   homeController = require("./controllers/homeController"),
   subscribersController = require("./controllers/subscribersController"),
   usersController = require("./controllers/usersController"),
   coursesController = require("./controllers/coursesController"),
-  Subscriber = require("./models/subscriber");
+  User = require("./models/user");
 
 mongoose.Promise = global.Promise;
 
@@ -28,7 +29,7 @@ db.once("open", () => {
   console.log("Successfully connected to MongoDB using Mongoose!");
 });
 
-app.set("port", process.env.PORT || 3000);
+app.set("port", process.env.PORT || 5000);
 app.set("view engine", "ejs");
 
 router.use(express.static("public"));
@@ -39,6 +40,13 @@ router.use(
   })
 );
 
+router.use(
+  methodOverride("_method", {
+    methods: ["POST", "GET"]
+  })
+);
+
+router.use(express.json());
 router.use(cookieParser("secret_passcode"));
 router.use(expressSession({
   secret: "secret-passcode",
@@ -48,25 +56,30 @@ router.use(expressSession({
   resave: false,
   saveUninitialized: false
 }));
+
+router.use(passport.initialize());
+router.use(passport.session());
+
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 router.use(connectFlash())
 
-
-router.use(
-  methodOverride("_method", {
-    methods: ["POST", "GET"]
-  })
-);
-
 router.use((req, res, next) => {
+  res.locals.loggedIn = req.isAuthenticated();
+  res.locals.currentUser = req.user;
   res.locals.flashMessages = req.flash();
   next();
 });
 
-router.use(express.json());
 router.use(homeController.logRequestPaths);
 
 router.get("/", homeController.index);
 router.get("/contact", homeController.getSubscriptionPage);
+
+router.get("/users/login", usersController.login);
+router.post("/users/login", usersController.authenticate, usersController.redirectView);
+router.get("/users/logout", usersController.logout)
 
 router.get("/users", usersController.index, usersController.indexView);
 router.get("/users/new", usersController.new);
@@ -75,6 +88,7 @@ router.get("/users/:id/edit", usersController.edit);
 router.put("/users/:id/update", usersController.update, usersController.redirectView);
 router.delete("/users/:id/delete", usersController.delete, usersController.redirectView);
 router.get("/users/:id", usersController.show, usersController.showView);
+
 
 router.get("/subscribers", subscribersController.index, subscribersController.indexView);
 router.get("/subscribers/new", subscribersController.new);

@@ -1,6 +1,18 @@
 "use strict";
 
-const User = require("../models/user");
+const User = require("../models/user"),
+  passport = require("passport"),
+  getUserParams = body => {
+    return {
+      name: {
+        first: body.first,
+        last: body.last
+      },
+      email: body.email,
+      password: body.password,
+      zipCode: body.zipCode
+    };
+  };
 
 module.exports = {
   index: (req, res, next) => {
@@ -15,31 +27,29 @@ module.exports = {
       });
   },
   indexView: (req, res) => {
-    res.render("users/index");
+    res.render("users/index", {
+      flashMessages: {
+        success: "Loaded all users!"
+      }
+    });
   },
   new: (req, res) => {
     res.render("users/new");
   },
   create: (req, res, next) => {
-    let userParams = {
-      name: {
-        first: req.body.first,
-        last: req.body.last
-      },
-      email: req.body.email,
-      password: req.body.password,
-      zipCode: req.body.zipCode
-    };
-    User.create(userParams)
-      .then(user => {
+    if (req.skip) next();
+    let newUser = new User( getUserParams(req.body) );
+    User.register(newUser, req.body.password, (error, user) => {
+      if (user) {
+        req.flash("success", `${user.fullName}'s account created successfully!`);
         res.locals.redirect = "/users";
-        res.locals.user = user;
         next();
-      })
-      .catch(error => {
-        console.log(`Error saving user: ${error.message}`);
-        next(error);
-      });
+      } else {
+        req.flash("error", `Failed to create user account because: ${error.message}.`);
+        res.locals.redirect = "/users/new";
+        next();
+      }
+    });
   },
   redirectView: (req, res, next) => {
     let redirectPath = res.locals.redirect;
@@ -100,7 +110,7 @@ module.exports = {
   },
   delete: (req, res, next) => {
     let userId = req.params.id;
-    User.findByIdAndRemove(userId)
+    User.findByIdAndDelete(userId)
       .then(() => {
         res.locals.redirect = "/users";
         next();
@@ -110,20 +120,22 @@ module.exports = {
         next();
       });
   },
-  create: (req, res, next) => {
-    let userParams = getUserParams(req.body);
-    User.create(userParams)
-      .then(user => {
-        req.flash("success", `${user.fullName}'s account created successfully!`);
-        res.locals.redirect = "/users";
-        res.locals.user = user;
-        next();
-      })
-      .catch(error => {
-        console.log(`Error saving user: ${error.message}`);
-        res.locals.redirect = "/users/new";
-        req.flash("error",`Failed to create user account because: ➥${error.message}.`);
-        next();
-      });
+  
+  login: (req, res) => {
+    res.render("users/login");
+  },
+
+  authenticate: passport.authenticate("local", {
+    failureRedirect: "/users/login",
+    failureFlash: "Failed to login.",
+    successRedirect: "/",
+    successFlash: "Logged in!"
+  }),
+  
+  logout: (req, res, next) => {
+    req.logout(function(err) {
+      if (err) { return next(err); }
+      return res.redirect('/');
+    });
   }
 };
